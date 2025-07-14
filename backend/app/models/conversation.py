@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, JSON, Boolean, DateTime, Text, Float
+from sqlalchemy import Column, Integer, String, JSON, Boolean, DateTime, Text, Float, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from ..core.database import Base
@@ -9,7 +9,7 @@ class Conversation(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     conversation_id = Column(String, unique=True, index=True, nullable=False)
-    client_id = Column(String, nullable=False, index=True)
+    client_id = Column(String, ForeignKey("clients.client_id"), nullable=False, index=True)
     
     # User info
     user_id = Column(String, index=True)  # Optional, for authenticated users
@@ -41,7 +41,7 @@ class Message(Base):
     __tablename__ = "messages"
     
     id = Column(Integer, primary_key=True, index=True)
-    conversation_id = Column(String, nullable=False, index=True)
+    conversation_id = Column(String, ForeignKey("conversations.conversation_id"), nullable=False, index=True)
     
     # Message info
     message_id = Column(String, unique=True, index=True, nullable=False)
@@ -75,7 +75,7 @@ class UsageMetric(Base):
     __tablename__ = "usage_metrics"
     
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(String, nullable=False, index=True)
+    client_id = Column(String, ForeignKey("clients.client_id"), nullable=False, index=True)
     
     # Metrics
     date = Column(DateTime(timezone=True), nullable=False, index=True)

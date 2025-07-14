@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, JSON, Boolean, DateTime, Text
+from sqlalchemy import Column, Integer, String, JSON, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from ..core.database import Base
@@ -39,7 +39,7 @@ class KnowledgeBase(Base):
     __tablename__ = "knowledge_bases"
     
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(String, nullable=False, index=True)
+    client_id = Column(String, ForeignKey("clients.client_id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     description = Column(Text)
     
@@ -69,7 +69,7 @@ class Document(Base):
     __tablename__ = "documents"
     
     id = Column(Integer, primary_key=True, index=True)
-    knowledge_base_id = Column(Integer, nullable=False, index=True)
+    knowledge_base_id = Column(Integer, ForeignKey("knowledge_bases.id"), nullable=False, index=True)
     
     # Document info
     title = Column(String, nullable=False)
@@ -101,7 +101,7 @@ class DocumentChunk(Base):
     __tablename__ = "document_chunks"
     
     id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, nullable=False, index=True)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False, index=True)
     
     # Chunk info
     chunk_text = Column(Text, nullable=False)
