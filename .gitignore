@@ -158,3 +158,6 @@ temp/
 # Build outputs
 dist/
 build/
+
+# Claude Code
+.claude/
