@@ -103,6 +103,11 @@ docker run -p 6333:6333 qdrant/qdrant
 
 # Database migrations
 alembic upgrade head
+
+# Git workflow (CRITICAL: Use after every completed task/feature)
+git add .
+git commit -m "feat: descriptive message using conventional commits"
+git push origin main
 ```
 
 ### Testing Strategy

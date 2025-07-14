@@ -31,6 +31,8 @@ This is a living document that tracks all tasks for the customer service bot pro
 - [x] **2025-07-14**: Configure modern Python tooling (uv, ruff, pytest with coverage)
 - [x] **2025-07-14**: Configure TypeScript tooling (pnpm, jest, testing-library)
 - [x] **2025-07-14**: Add critical testing requirements to CLAUDE.md
+- [x] **2025-07-14**: Initialize git repository and push to https://github.com/console-1/botz.git
+- [x] **2025-07-14**: Add critical git workflow requirements to CLAUDE.md
 
 ### Phase 0: Project Foundation (Week 1)
 - [x] **2025-07-14**: Create context/Q.md with comprehensive questions about the customer service bot requirements
