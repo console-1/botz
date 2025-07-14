@@ -339,3 +339,136 @@ async def get_supported_file_types():
         "supported_types": supported_types,
         "extensions": list(processor.SUPPORTED_TYPES.values())
     }
+
+
+@router.get("/{kb_id}/documents/{doc_id}/chunks")
+async def get_document_chunks(
+    kb_id: int,
+    doc_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get all chunks for a document"""
+    
+    from ...models.client import Document
+    
+    # Verify document exists and belongs to knowledge base
+    document = db.query(Document).filter(
+        Document.id == doc_id,
+        Document.knowledge_base_id == kb_id
+    ).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    ingestion_service = DocumentIngestionService(db)
+    chunks = ingestion_service.get_document_chunks(doc_id)
+    
+    return {
+        "document_id": doc_id,
+        "total_chunks": len(chunks),
+        "chunks": [
+            {
+                "id": chunk.id,
+                "chunk_index": chunk.chunk_index,
+                "text": chunk.chunk_text,
+                "size": len(chunk.chunk_text),
+                "metadata": chunk.metadata,
+                "vector_id": chunk.vector_id,
+                "created_at": chunk.created_at
+            }
+            for chunk in chunks
+        ]
+    }
+
+
+@router.post("/{kb_id}/documents/{doc_id}/rechunk")
+async def rechunk_document(
+    kb_id: int,
+    doc_id: int,
+    chunking_config: Optional[Dict] = None,
+    db: Session = Depends(get_db)
+):
+    """Re-chunk a document with new configuration"""
+    
+    from ...models.client import Document
+    from ...rag.chunking import ChunkingConfig, ChunkingStrategy
+    
+    # Verify document exists and belongs to knowledge base
+    document = db.query(Document).filter(
+        Document.id == doc_id,
+        Document.knowledge_base_id == kb_id
+    ).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Parse chunking configuration if provided
+    config = None
+    if chunking_config:
+        try:
+            config = ChunkingConfig(
+                strategy=ChunkingStrategy(chunking_config.get('strategy', 'semantic')),
+                max_chunk_size=chunking_config.get('max_chunk_size', 1000),
+                min_chunk_size=chunking_config.get('min_chunk_size', 100),
+                overlap_size=chunking_config.get('overlap_size', 200),
+                respect_sentence_boundaries=chunking_config.get('respect_sentence_boundaries', True),
+                respect_paragraph_boundaries=chunking_config.get('respect_paragraph_boundaries', True),
+                preserve_headers=chunking_config.get('preserve_headers', True)
+            )
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid chunking configuration: {str(e)}")
+    
+    ingestion_service = DocumentIngestionService(db)
+    
+    try:
+        chunks = await ingestion_service.rechunk_document(doc_id, config)
+        
+        return {
+            "document_id": doc_id,
+            "message": "Document re-chunked successfully",
+            "total_chunks": len(chunks),
+            "chunks_created": len(chunks)
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{kb_id}/chunk-statistics")
+async def get_chunk_statistics(
+    kb_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get chunking statistics for a knowledge base"""
+    
+    # Verify knowledge base exists
+    kb = db.query(KnowledgeBase).filter(KnowledgeBase.id == kb_id).first()
+    if not kb:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+    
+    ingestion_service = DocumentIngestionService(db)
+    stats = ingestion_service.get_chunk_statistics(kb_id)
+    
+    return {
+        "knowledge_base_id": kb_id,
+        "statistics": stats
+    }
+
+
+@router.get("/chunking-strategies")
+async def get_chunking_strategies():
+    """Get available chunking strategies"""
+    
+    from ...rag.chunking import ChunkingStrategy
+    
+    return {
+        "strategies": [strategy.value for strategy in ChunkingStrategy],
+        "default": ChunkingStrategy.SEMANTIC.value,
+        "descriptions": {
+            "semantic": "Intelligent chunking that preserves semantic boundaries",
+            "fixed_size": "Fixed character count chunking with optional overlap",
+            "paragraph": "Chunk by paragraphs, combining small ones",
+            "sentence": "Chunk by sentences, combining to reach target size",
+            "section": "Chunk by identified sections (headers, breaks, etc.)"
+        }
+    }

@@ -6,8 +6,9 @@ from io import BytesIO
 import aiofiles
 from sqlalchemy.orm import Session
 
-from ..models.client import Document, KnowledgeBase
+from ..models.client import Document, KnowledgeBase, DocumentChunk
 from ..schemas.client import KnowledgeBaseConfig
+from ..rag.chunking import ChunkingService, ChunkingConfig, ChunkingStrategy
 
 
 class DocumentProcessor:
@@ -197,6 +198,7 @@ class DocumentIngestionService:
     def __init__(self, db: Session):
         self.db = db
         self.processor = DocumentProcessor()
+        self.chunking_service = ChunkingService()
     
     async def ingest_document(
         self,
@@ -273,10 +275,17 @@ class DocumentIngestionService:
         self.db.commit()
         self.db.refresh(doc)
         
+        # Chunk the document content
+        await self._chunk_document(doc, kb)
+        
         # Update knowledge base stats
         kb.total_documents = self.db.query(Document).filter(
             Document.knowledge_base_id == knowledge_base_id,
             Document.processing_status == "completed"
+        ).count()
+        
+        kb.total_chunks = self.db.query(DocumentChunk).join(Document).filter(
+            Document.knowledge_base_id == knowledge_base_id
         ).count()
         
         self.db.commit()
@@ -410,3 +419,118 @@ class DocumentIngestionService:
             'created_at': doc.created_at,
             'updated_at': doc.updated_at
         }
+    
+    async def _chunk_document(self, document: Document, knowledge_base: KnowledgeBase):
+        """Chunk document content and store chunks"""
+        
+        # Get chunking configuration from knowledge base
+        chunking_config_dict = knowledge_base.chunking_config or {}
+        
+        # Create chunking configuration
+        chunking_config = ChunkingConfig(
+            strategy=ChunkingStrategy(chunking_config_dict.get('chunking_strategy', 'semantic')),
+            max_chunk_size=chunking_config_dict.get('chunk_size', 1000),
+            min_chunk_size=chunking_config_dict.get('min_chunk_size', 100),
+            overlap_size=chunking_config_dict.get('chunk_overlap', 200),
+            respect_sentence_boundaries=chunking_config_dict.get('respect_sentence_boundaries', True),
+            respect_paragraph_boundaries=chunking_config_dict.get('respect_paragraph_boundaries', True),
+            preserve_headers=chunking_config_dict.get('preserve_headers', True)
+        )
+        
+        # Prepare document metadata for chunking
+        document_metadata = {
+            'document_id': document.id,
+            'document_title': document.title,
+            'document_type': document.content_type,
+            'source_url': document.source_url,
+            **document.metadata
+        }
+        
+        # Chunk the document
+        chunks = self.chunking_service.chunk_document(
+            text=document.content,
+            config=chunking_config,
+            document_metadata=document_metadata
+        )
+        
+        # Delete existing chunks for this document (in case of re-processing)
+        self.db.query(DocumentChunk).filter(
+            DocumentChunk.document_id == document.id
+        ).delete()
+        
+        # Store chunks in database
+        for chunk in chunks:
+            doc_chunk = DocumentChunk(
+                document_id=document.id,
+                chunk_text=chunk.text,
+                chunk_index=chunk.chunk_index,
+                metadata=chunk.metadata,
+                vector_id=None  # Will be set when embeddings are generated
+            )
+            self.db.add(doc_chunk)
+        
+        self.db.commit()
+        
+        return chunks
+    
+    async def rechunk_document(self, document_id: int, chunking_config: ChunkingConfig = None) -> List[DocumentChunk]:
+        """Re-chunk an existing document with new configuration"""
+        
+        document = self.db.query(Document).filter(Document.id == document_id).first()
+        if not document:
+            raise ValueError(f"Document {document_id} not found")
+        
+        knowledge_base = self.db.query(KnowledgeBase).filter(
+            KnowledgeBase.id == document.knowledge_base_id
+        ).first()
+        
+        if chunking_config:
+            # Update knowledge base chunking config
+            knowledge_base.chunking_config.update(chunking_config.__dict__)
+            self.db.commit()
+        
+        # Re-chunk the document
+        chunks = await self._chunk_document(document, knowledge_base)
+        
+        # Return the database chunks
+        return self.db.query(DocumentChunk).filter(
+            DocumentChunk.document_id == document_id
+        ).order_by(DocumentChunk.chunk_index).all()
+    
+    def get_document_chunks(self, document_id: int) -> List[DocumentChunk]:
+        """Get all chunks for a document"""
+        return self.db.query(DocumentChunk).filter(
+            DocumentChunk.document_id == document_id
+        ).order_by(DocumentChunk.chunk_index).all()
+    
+    def get_chunk_statistics(self, knowledge_base_id: int) -> Dict[str, Any]:
+        """Get chunking statistics for a knowledge base"""
+        
+        chunks = self.db.query(DocumentChunk).join(Document).filter(
+            Document.knowledge_base_id == knowledge_base_id
+        ).all()
+        
+        if not chunks:
+            return {
+                'total_chunks': 0,
+                'total_characters': 0,
+                'avg_chunk_size': 0,
+                'min_chunk_size': 0,
+                'max_chunk_size': 0,
+                'chunk_types': []
+            }
+        
+        # Convert to chunking service format for statistics
+        from ..rag.chunking import TextChunk
+        text_chunks = [
+            TextChunk(
+                text=chunk.chunk_text,
+                start_char=0,  # Not tracked in DB
+                end_char=len(chunk.chunk_text),
+                chunk_index=chunk.chunk_index,
+                metadata=chunk.metadata
+            )
+            for chunk in chunks
+        ]
+        
+        return self.chunking_service.get_chunk_statistics(text_chunks)
