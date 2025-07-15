@@ -27,12 +27,17 @@ def main():
     files_to_check = [
         'app/services/vector_service.py',
         'app/services/hybrid_search.py',
+        'app/services/versioning.py',
         'app/api/endpoints/vectors.py',
         'app/api/endpoints/search.py',
+        'app/api/endpoints/versioning.py',
         'app/schemas/vector.py',
         'app/schemas/search.py',
+        'app/schemas/versioning.py',
+        'app/models/versioning.py',
         'tests/test_vector_service.py',
-        'tests/test_hybrid_search.py'
+        'tests/test_hybrid_search.py',
+        'tests/test_versioning.py'
     ]
     
     all_good = True
