@@ -26,9 +26,13 @@ def main():
     """Check syntax of all vector service files"""
     files_to_check = [
         'app/services/vector_service.py',
+        'app/services/hybrid_search.py',
         'app/api/endpoints/vectors.py',
+        'app/api/endpoints/search.py',
         'app/schemas/vector.py',
-        'tests/test_vector_service.py'
+        'app/schemas/search.py',
+        'tests/test_vector_service.py',
+        'tests/test_hybrid_search.py'
     ]
     
     all_good = True
