@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from ..models.client import Document, KnowledgeBase, DocumentChunk
 from ..schemas.client import KnowledgeBaseConfig
 from ..rag.chunking import ChunkingService, ChunkingConfig, ChunkingStrategy
+from .vector_service import VectorService
 
 
 class DocumentProcessor:
@@ -195,10 +196,12 @@ class DocumentProcessor:
 class DocumentIngestionService:
     """Manages document ingestion workflow"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, auto_generate_embeddings: bool = True):
         self.db = db
         self.processor = DocumentProcessor()
         self.chunking_service = ChunkingService()
+        self.auto_generate_embeddings = auto_generate_embeddings
+        self.vector_service = VectorService(db) if auto_generate_embeddings else None
     
     async def ingest_document(
         self,
@@ -277,6 +280,18 @@ class DocumentIngestionService:
         
         # Chunk the document content
         await self._chunk_document(doc, kb)
+        
+        # Generate embeddings if enabled
+        if self.auto_generate_embeddings and self.vector_service:
+            try:
+                # Ensure client collection exists
+                await self.vector_service.create_client_collection(kb.client_id)
+                
+                # Generate embeddings for the document
+                await self.vector_service.generate_and_store_embeddings(knowledge_base_id)
+            except Exception as e:
+                print(f"Warning: Failed to generate embeddings for document {doc.id}: {str(e)}")
+                # Don't fail the ingestion if embeddings fail
         
         # Update knowledge base stats
         kb.total_documents = self.db.query(Document).filter(
@@ -381,6 +396,13 @@ class DocumentIngestionService:
             return False
         
         knowledge_base_id = doc.knowledge_base_id
+        
+        # Delete embeddings if vector service is available
+        if self.vector_service:
+            try:
+                await self.vector_service.delete_document_embeddings(document_id)
+            except Exception as e:
+                print(f"Warning: Failed to delete embeddings for document {document_id}: {str(e)}")
         
         # Delete document (cascades to chunks via database foreign key)
         self.db.delete(doc)
