@@ -47,10 +47,12 @@ This is a generic customer service bot with hot-swappable knowledge bases and co
 - **UI Pattern**: Floating chat button that expands to modal
 
 ### LLM Integration
-- **Primary Models**: GPT-3.5 Turbo, Claude 3.5 Haiku, Mixtral 8x7B
-- **Fallback Chain**: GPT-4 → GPT-3.5 → Mixtral → Static FAQ → Human
+- **Primary Models**: Venice.ai (OpenAI/Anthropic models), OpenRouter.ai fallback
+- **Provider Strategy**: Multi-provider abstraction for cost optimization and reliability
+- **Fallback Chain**: Primary Venice.ai → OpenRouter.ai → Static FAQ → Human escalation
 - **Budget Target**: ~$0.30 per 100K tokens per client
 - **Response Time**: < 1s target (300-800ms typical)
+- **Week 3 Focus**: Implement LLM abstraction layer and provider integration
 
 ## Key Development Principles
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import chat, clients, knowledge_base, analytics, health, vectors, search, versioning
+from .endpoints import chat, clients, knowledge_base, analytics, health, vectors, search, versioning, llm
 
 # Create main API router
 api_router = APIRouter()
@@ -12,4 +12,5 @@ api_router.include_router(knowledge_base.router, prefix="/knowledge-base", tags=
 api_router.include_router(vectors.router, prefix="/vectors", tags=["vectors"])
 api_router.include_router(search.router, prefix="/search", tags=["search"])
 api_router.include_router(versioning.router, prefix="/versioning", tags=["versioning"])
+api_router.include_router(llm.router, prefix="/llm", tags=["llm"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])

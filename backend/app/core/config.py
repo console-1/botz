@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
     mistral_api_key: Optional[str] = None
+    venice_ai_api_key: Optional[str] = None
+    openrouter_api_key: Optional[str] = None
+    
+    # LLM Provider URLs
+    venice_ai_base_url: str = "https://api.venice.ai/v1"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    ollama_base_url: str = "http://localhost:11434"
     
     # Security
     secret_key: str = "your-secret-key-change-this-in-production"

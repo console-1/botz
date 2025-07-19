@@ -49,20 +49,20 @@ This is a living document that tracks all tasks for the customer service bot pro
 ### Week 2: Knowledge Base Pipeline
 - [x] Implement document ingestion pipeline
 - [x] Create semantic chunking algorithm
-- [x] Integrate vector embedding generation (OpenAI/Hugging Face)
+- [ ] Integrate vector embedding generation (Venice.ai with OpenAI as fallback)
 - [x] Build vector database operations (CRUD for embeddings)
 - [x] Implement hybrid search (semantic + keyword)
 - [x] Create knowledge base versioning system
 
 ### Week 3: LLM Integration & Core Logic
-- [ ] Integrate multiple LLM providers (OpenAI, Anthropic, Mistral)
+- [ ] Integrate multiple LLM providers (Venice.ai with OpenRouter.ai as fallback)
 - [ ] Implement LLM abstraction layer for model switching
 - [ ] Create conversation context management
 - [ ] Build response generation with tone injection
 - [ ] Implement fallback chain and error handling
 - [ ] Add confidence scoring and escalation logic
 
-### Week 4: Frontend Widget
+### Week 4: Frontend Widget (Build this is Lovable.dev)
 - [ ] Create React TypeScript widget foundation
 - [ ] Build chat interface components
 - [ ] Implement real-time messaging (WebSocket/SSE)
