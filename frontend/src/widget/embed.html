@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Service Bot Widget - Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .demo-content {
+            line-height: 1.6;
+            color: #666;
+        }
+        .controls {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .config-section {
+            margin-top: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>Customer Service Bot Widget Demo</h1>
+        
+        <div class="demo-content">
+            <p>This is a demo page showing the customer service bot widget in action. The widget appears as a floating button in the bottom-right corner.</p>
+            
+            <p>Features demonstrated:</p>
+            <ul>
+                <li>💬 Real-time chat interface</li>
+                <li>🎨 Customizable themes and branding</li>
+                <li>🤖 AI-powered responses with confidence scoring</li>
+                <li>📈 Escalation to human agents</li>
+                <li>📱 Mobile-responsive design</li>
+                <li>🔧 Developer-friendly API</li>
+            </ul>
+        </div>
+
+        <div class="controls">
+            <h3>Widget Controls</h3>
+            <button onclick="openWidget()">Open Widget</button>
+            <button onclick="closeWidget()">Close Widget</button>
+            <button onclick="toggleWidget()">Toggle Widget</button>
+            <button onclick="sendTestMessage()">Send Test Message</button>
+            <button onclick="changeTheme()">Change Theme</button>
+            <button onclick="destroyWidget()">Destroy Widget</button>
+            <button onclick="recreateWidget()">Recreate Widget</button>
+
+            <div class="config-section">
+                <h4>Widget Configuration:</h4>
+                <textarea id="configTextarea" readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include React dependencies -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Include the chat widget -->
+    <script>
+        // Widget configuration
+        const widgetConfig = {
+            clientId: 'demo-client',
+            apiUrl: 'http://localhost:8000',
+            theme: {
+                primaryColor: '#007bff',
+                secondaryColor: '#6c757d',
+                backgroundColor: '#ffffff',
+                textColor: '#333333',
+                borderRadius: 12,
+                fontFamily: 'system-ui, sans-serif',
+                fontSize: 14
+            },
+            branding: {
+                companyName: 'ACME Corp',
+                welcomeMessage: 'Hi! Welcome to ACME Corp. How can we help you today?',
+                placeholderText: 'Ask us anything...',
+                botName: 'AcmeBot',
+                avatarUrl: 'https://via.placeholder.com/40x40/007bff/ffffff?text=AC',
+                poweredByText: 'Powered by AI'
+            },
+            behavior: {
+                autoOpen: false,
+                openDelay: 2000,
+                showTypingIndicator: true,
+                enableSound: false,
+                enableEmojis: true,
+                maxMessageLength: 1000,
+                persistConversation: true
+            },
+            position: {
+                side: 'right',
+                bottom: 20,
+                horizontal: 20
+            },
+            debug: true
+        };
+
+        // Initialize widget
+        let widget = null;
+
+        function initializeWidget() {
+            try {
+                // This would normally use the built widget file
+                // For demo purposes, we'll simulate the widget
+                console.log('Widget would be initialized with config:', widgetConfig);
+                
+                // Update config display
+                document.getElementById('configTextarea').value = JSON.stringify(widgetConfig, null, 2);
+                
+                // Simulate widget creation
+                widget = {
+                    open: () => console.log('Widget opened'),
+                    close: () => console.log('Widget closed'),
+                    toggle: () => console.log('Widget toggled'),
+                    destroy: () => console.log('Widget destroyed'),
+                    sendMessage: (msg) => console.log('Sending message:', msg),
+                    updateConfig: (config) => console.log('Updating config:', config)
+                };
+                
+                console.log('Widget initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize widget:', error);
+                alert('Failed to initialize widget. Make sure the backend is running on http://localhost:8000');
+            }
+        }
+
+        // Widget control functions
+        function openWidget() {
+            if (widget) {
+                widget.open();
+            }
+        }
+
+        function closeWidget() {
+            if (widget) {
+                widget.close();
+            }
+        }
+
+        function toggleWidget() {
+            if (widget) {
+                widget.toggle();
+            }
+        }
+
+        function sendTestMessage() {
+            if (widget) {
+                widget.sendMessage('Hello! This is a test message from the demo page.');
+            }
+        }
+
+        function changeTheme() {
+            const themes = [
+                { primaryColor: '#007bff', name: 'Blue' },
+                { primaryColor: '#28a745', name: 'Green' },
+                { primaryColor: '#dc3545', name: 'Red' },
+                { primaryColor: '#6f42c1', name: 'Purple' },
+                { primaryColor: '#fd7e14', name: 'Orange' }
+            ];
+            
+            const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+            
+            if (widget) {
+                const newConfig = {
+                    ...widgetConfig,
+                    theme: {
+                        ...widgetConfig.theme,
+                        primaryColor: randomTheme.primaryColor
+                    }
+                };
+                
+                widget.updateConfig(newConfig);
+                console.log(`Changed theme to ${randomTheme.name}`);
+            }
+        }
+
+        function destroyWidget() {
+            if (widget) {
+                widget.destroy();
+                widget = null;
+                console.log('Widget destroyed');
+            }
+        }
+
+        function recreateWidget() {
+            destroyWidget();
+            setTimeout(initializeWidget, 500);
+        }
+
+        // Initialize widget when page loads
+        document.addEventListener('DOMContentLoaded', initializeWidget);
+
+        // Add event listeners for widget events
+        if (widget) {
+            widget.addEventListener?.('widget:open', () => {
+                console.log('Widget opened event');
+            });
+            
+            widget.addEventListener?.('message:receive', (data) => {
+                console.log('Message received:', data);
+            });
+            
+            widget.addEventListener?.('escalation:triggered', (data) => {
+                console.log('Escalation triggered:', data);
+                alert('Conversation escalated to human agent!');
+            });
+        }
+
+        // Simulate API responses for demo
+        console.log('Demo page loaded. The widget would normally connect to:', widgetConfig.apiUrl);
+        console.log('Available endpoints:');
+        console.log('- POST /api/v1/chat/v2/conversations/start');
+        console.log('- POST /api/v1/chat/v2/message');
+        console.log('- GET /api/v1/chat/v2/health');
+    </script>
+
+    <style>
+        /* Demo styles for simulated widget */
+        .demo-widget-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-size: 14px;
+        }
+    </style>
+</body>
+</html>
