@@ -1,13 +1,18 @@
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+"""
+Client and tenant management models for multi-tenant architecture
+"""
+
+from datetime import datetime, timezone
+from typing import Optional, Dict, Any, List
 from enum import Enum
 import uuid
 
-from sqlalchemy import Column, Integer, String, JSON, Boolean, DateTime, Text, ForeignKey, Index
+from sqlalchemy import Column, String, DateTime, Boolean, Integer, Text, JSON, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, validates
-from ..core.database import Base
+from sqlalchemy.ext.declarative import declarative_base
+
+from app.core.database import Base
 
 class ClientStatus(str, Enum):
     ACTIVE = "active"
@@ -22,14 +27,18 @@ class ClientTier(str, Enum):
     ENTERPRISE = "enterprise"
 
 class Client(Base):
+    """
+    Client tenant model - represents a company/organization using the service
+    """
     __tablename__ = "clients"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    client_id = Column(String(50), unique=True, index=True, nullable=False)
+    
+    # Primary identification
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    client_id = Column(String(50), unique=True, nullable=False, index=True)  # Human-readable ID
     name = Column(String(200), nullable=False)
-    email = Column(String(255), nullable=False)
     
     # Contact information
+    email = Column(String(255), nullable=False)
     contact_name = Column(String(100))
     phone = Column(String(20))
     website = Column(String(255))
@@ -38,27 +47,19 @@ class Client(Base):
     status = Column(String(20), nullable=False, default=ClientStatus.TRIAL)
     tier = Column(String(20), nullable=False, default=ClientTier.FREE)
     
-    # Legacy compatibility
-    is_active = Column(Boolean, default=True)
-    is_whitelabel = Column(Boolean, default=False)
-    
-    # Configuration (merged legacy fields)
-    config = Column(JSON, nullable=False, default={})
-    branding = Column(JSON, nullable=False, default={})
-    features = Column(JSON, nullable=False, default={})
-    configuration = Column(JSON, nullable=False, default={})  # New unified config
+    # Configuration
+    configuration = Column(JSON, nullable=False, default=dict)
     
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     trial_ends_at = Column(DateTime(timezone=True))
     last_active_at = Column(DateTime(timezone=True))
     
     # Relationships
+    api_keys = relationship("ClientAPIKey", back_populates="client", cascade="all, delete-orphan")
     knowledge_bases = relationship("KnowledgeBase", back_populates="client")
     conversations = relationship("Conversation", back_populates="client")
-    usage_metrics = relationship("UsageMetric", back_populates="client")
-    api_keys = relationship("ClientAPIKey", back_populates="client", cascade="all, delete-orphan")
     usage_records = relationship("UsageRecord", back_populates="client")
     
     # Indexes
@@ -106,9 +107,9 @@ class Client(Base):
             }
         }
     
-    def is_active_client(self) -> bool:
+    def is_active(self) -> bool:
         """Check if client is active"""
-        return self.status == ClientStatus.ACTIVE or self.is_active
+        return self.status == ClientStatus.ACTIVE
     
     def is_trial_expired(self) -> bool:
         """Check if trial period has expired"""
@@ -121,21 +122,24 @@ class Client(Base):
         self.last_active_at = datetime.now(timezone.utc)
 
 class ClientAPIKey(Base):
-    """API keys for client authentication"""
+    """
+    API keys for client authentication
+    """
     __tablename__ = "client_api_keys"
     
+    # Primary identification
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
     
     # Key information
-    key_prefix = Column(String(20), nullable=False)
-    key_hash = Column(String(255), nullable=False)
-    name = Column(String(100), nullable=False)
+    key_prefix = Column(String(20), nullable=False)  # First few characters for identification
+    key_hash = Column(String(255), nullable=False)  # Hashed full key
+    name = Column(String(100), nullable=False)  # Human-readable name
     description = Column(Text)
     
     # Permissions and limits
-    scopes = Column(JSON, nullable=False, default=list)
-    rate_limit = Column(Integer, default=1000)
+    scopes = Column(JSON, nullable=False, default=list)  # List of allowed scopes
+    rate_limit = Column(Integer, default=1000)  # Requests per hour
     
     # Status
     is_active = Column(Boolean, nullable=False, default=True)
@@ -143,8 +147,8 @@ class ClientAPIKey(Base):
     expires_at = Column(DateTime(timezone=True))
     
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships
     client = relationship("Client", back_populates="api_keys")
@@ -170,9 +174,12 @@ class ClientAPIKey(Base):
         self.last_used_at = datetime.now(timezone.utc)
 
 class UsageRecord(Base):
-    """Track client usage for billing and analytics"""
+    """
+    Track client usage for billing and analytics
+    """
     __tablename__ = "usage_records"
     
+    # Primary identification
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
     
@@ -198,7 +205,7 @@ class UsageRecord(Base):
     estimated_cost_usd = Column(Integer, default=0)  # Store as cents
     
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     
     # Relationships
     client = relationship("Client", back_populates="usage_records")
@@ -209,88 +216,46 @@ class UsageRecord(Base):
         Index('idx_usage_period_start', 'period_start'),
     )
 
-
-class KnowledgeBase(Base):
-    __tablename__ = "knowledge_bases"
+class ClientInvitation(Base):
+    """
+    Client invitations for onboarding
+    """
+    __tablename__ = "client_invitations"
     
-    id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False, index=True)
-    client_string_id = Column(String, ForeignKey("clients.client_id"), nullable=True, index=True)  # Legacy support
-    name = Column(String, nullable=False)
-    description = Column(Text)
+    # Primary identification
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
-    # Versioning
-    version = Column(String, default="1.0.0")
-    is_active = Column(Boolean, default=True)
+    # Invitation details
+    email = Column(String(255), nullable=False)
+    client_name = Column(String(200), nullable=False)
+    client_id = Column(String(50), nullable=False)
+    invited_by = Column(String(255))  # Admin email who sent invitation
     
-    # Metadata
-    total_documents = Column(Integer, default=0)
-    total_chunks = Column(Integer, default=0)
-    last_updated = Column(DateTime(timezone=True), server_default=func.now())
+    # Invitation token
+    token = Column(String(255), nullable=False, unique=True, index=True)
     
-    # Configuration
-    chunking_config = Column(JSON, nullable=False, default={})
-    embedding_config = Column(JSON, nullable=False, default={})
+    # Status
+    status = Column(String(20), nullable=False, default="pending")  # pending, accepted, expired
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    accepted_at = Column(DateTime(timezone=True))
     
-    # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
-    # Relationships
-    client = relationship("Client", back_populates="knowledge_bases")
-    documents = relationship("Document", back_populates="knowledge_base")
-
-
-class Document(Base):
-    __tablename__ = "documents"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    knowledge_base_id = Column(Integer, ForeignKey("knowledge_bases.id"), nullable=False, index=True)
-    
-    # Document info
-    title = Column(String, nullable=False)
-    content = Column(Text, nullable=False)
-    content_type = Column(String, default="text/plain")
-    source_url = Column(String)
-    
-    # Metadata
-    metadata = Column(JSON, nullable=False, default={})
-    
-    # Processing status
-    processing_status = Column(String, default="pending")  # pending, processing, completed, failed
-    error_message = Column(Text)
-    
-    # Versioning
-    version = Column(String, default="1.0.0")
-    content_hash = Column(String, index=True)
+    # Configuration for new client
+    initial_configuration = Column(JSON, default=dict)
+    initial_tier = Column(String(20), default=ClientTier.TRIAL)
     
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     
-    # Relationships
-    knowledge_base = relationship("KnowledgeBase", back_populates="documents")
-    chunks = relationship("DocumentChunk", back_populates="document")
-
-
-class DocumentChunk(Base):
-    __tablename__ = "document_chunks"
+    # Indexes
+    __table_args__ = (
+        Index('idx_invitation_email_status', 'email', 'status'),
+        Index('idx_invitation_expires_at', 'expires_at'),
+    )
     
-    id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False, index=True)
+    def is_expired(self) -> bool:
+        """Check if invitation is expired"""
+        return datetime.now(timezone.utc) > self.expires_at
     
-    # Chunk info
-    chunk_text = Column(Text, nullable=False)
-    chunk_index = Column(Integer, nullable=False)
-    
-    # Metadata
-    metadata = Column(JSON, nullable=False, default={})
-    
-    # Vector info (stored in Qdrant, referenced here)
-    vector_id = Column(String, unique=True, index=True)
-    
-    # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Relationships
-    document = relationship("Document", back_populates="chunks")
+    def is_valid(self) -> bool:
+        """Check if invitation is valid for acceptance"""
+        return self.status == "pending" and not self.is_expired()

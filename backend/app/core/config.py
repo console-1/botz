@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     secret_key: str = "your-secret-key-change-this-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    admin_api_key: str = "admin-key-change-this-in-production"
+    
+    # URLs
+    api_url: str = "http://localhost:8000"
+    frontend_url: str = "http://localhost:3000"
+    cdn_url: str = "https://cdn.your-domain.com"
     
     # CORS
     allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:8080"]

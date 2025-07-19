@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, JSON, Boolean, DateTime, Text, Float, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from ..core.database import Base
@@ -9,7 +10,8 @@ class Conversation(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     conversation_id = Column(String, unique=True, index=True, nullable=False)
-    client_id = Column(String, ForeignKey("clients.client_id"), nullable=False, index=True)
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False, index=True)
+    client_string_id = Column(String, ForeignKey("clients.client_id"), nullable=True, index=True)  # Legacy support
     
     # User info
     user_id = Column(String, index=True)  # Optional, for authenticated users
@@ -75,7 +77,8 @@ class UsageMetric(Base):
     __tablename__ = "usage_metrics"
     
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(String, ForeignKey("clients.client_id"), nullable=False, index=True)
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False, index=True)
+    client_string_id = Column(String, ForeignKey("clients.client_id"), nullable=True, index=True)  # Legacy support
     
     # Metrics
     date = Column(DateTime(timezone=True), nullable=False, index=True)
