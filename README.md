@@ -4,14 +4,41 @@ A generic customer service bot with hot-swappable knowledge bases and configurab
 
 ## Features
 
-- **Multi-tenant Architecture**: Isolated knowledge bases and configurations per client
-- **Hot-swappable Knowledge Bases**: Easy to update and version knowledge bases
-- **Configurable Tone & Style**: Customizable bot personality and responses
-- **RAG (Retrieval-Augmented Generation)**: Intelligent document search and response generation
-- **Embeddable Widget**: React-based chat widget for client websites
-- **Multiple LLM Support**: OpenAI, Anthropic, Mistral with fallback chains
-- **Real-time Analytics**: Usage tracking and performance metrics
-- **GDPR Compliant**: Privacy-first design with data retention controls
+### 🏗️ **Multi-Tenant Architecture**
+- Secure client isolation with UUID-based identification
+- Tier-based resource quotas (Free, Starter, Professional, Enterprise)
+- API key authentication with scoped permissions
+- Client onboarding flow with invitation system
+
+### 📚 **Knowledge Base Management**
+- Hot-swappable knowledge bases with versioning
+- Multi-format document ingestion (text, HTML, JSON, CSV)
+- Intelligent semantic chunking with 5 strategies
+- Hybrid search (semantic + keyword) with re-ranking
+
+### 🤖 **Advanced LLM Integration** 
+- 6 LLM providers with fallback chains (OpenAI, Anthropic, Mistral, Venice.ai, OpenRouter, Ollama)
+- 8 customizable tone styles (Professional, Warm, Casual, Technical, etc.)
+- Conversation memory optimization and context management
+- Confidence scoring and intelligent escalation
+
+### 💬 **Embeddable Chat Widget**
+- React TypeScript widget with 12 components
+- Real-time messaging with streaming support
+- Mobile-responsive design with touch interactions
+- Comprehensive branding customization
+
+### 📊 **Analytics & Monitoring**
+- Real-time usage tracking and event aggregation
+- Cost attribution and token usage monitoring
+- Admin dashboard with comprehensive client management
+- Performance metrics and escalation analytics
+
+### 🛡️ **Security & Compliance**
+- GDPR-ready with data retention controls
+- Secure API key generation with bcrypt hashing
+- Tenant isolation and data access validation
+- Audit trails and comprehensive logging
 
 ## Architecture
 
